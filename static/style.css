@@ -1,0 +1,44 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#board-container {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    grid-gap: 5px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+
+button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+select {
+    font-size: 16px;
+    margin: 5px;
+}
+
+#game-info, #move-history {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+#stats {
+    margin-top: 30px;
+}
