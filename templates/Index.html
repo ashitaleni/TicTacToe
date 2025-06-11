@@ -1,44 +1,66 @@
+<!-- templates/index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Tic Tac Toe</title>
+    <title>Cyber Tac Toe</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Tic Tac Toe (3x3)</h1>
+    <div class="game-wrapper">
+        <!-- The new sidebar for all controls and information -->
+        <aside class="sidebar">
+            <h1>CYBER TAC TOE</h1>
 
-        <div class="controls">
-            <label for="difficulty">Difficulty:</label>
-            <select id="difficulty">
-                <option value="easy">Easy</option>
-                <option value="medium" selected>Medium</option>
-                <option value="hard">Hard</option>
-            </select>
-
-            <button id="start-btn">Start Game</button>
-            <button id="restart-btn">Restart Game</button>
-        </div>
-
-        <div id="how-to-play-container">
-            <button id="how-to-play-toggle">How to Play</button>
-            <div id="how-to-play" style="display: none;">
-                <p>Welcome to Tic Tac Toe!</p>
-                <ul>
-                    <li>You play as <strong>X</strong>, and the AI plays as <strong>O</strong>.</li>
-                    <li>Click on any empty cell to make your move.</li>
-                    <li>The first to align 3 of their symbols horizontally, vertically, or diagonally wins!</li>
-                    <li>If all cells are filled without a winner, it's a draw.</li>
-                </ul>
+            <!-- New Game Settings -->
+            <div class="control-group">
+                <label for="board-size">Board Size</label>
+                <select id="board-size">
+                    <option value="3" selected>3 x 3 (Classic)</option>
+                    <option value="4">4 x 4</option>
+                    <option value="5">5 x 5</option>
+                </select>
             </div>
-        </div>
+            <div class="control-group">
+                <label for="difficulty">AI Difficulty</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="start-player">Who Starts?</label>
+                <select id="start-player">
+                    <option value="X" selected>Player (X)</option>
+                    <option value="O">AI (O)</option>
+                </select>
+            </div>
+            
+            <!-- Game Action Buttons -->
+            <div class="control-group">
+                <button id="start-btn">New Game</button>
+                <button id="restart-btn">Restart Match</button>
+            </div>
 
-        <div id="game-info">Click "Start Game" to begin.</div>
-        <div id="board-container" class="board"></div>
+            <!-- Stats and History sections -->
+            <div class="stats-container">
+                <h3>MATCH STATS</h3>
+                <pre id="stats-display"></pre>
+            </div>
 
-        <div id="move-history" class="history"></div>
-        <div id="stats" class="stats"></div>
+            <div class="history-container">
+                <h3>MOVE HISTORY</h3>
+                <div id="move-history" class="move-history"></div>
+            </div>
+        </aside>
+
+        <!-- The main area for the game board -->
+        <main class="game-area">
+            <div id="game-info">Select your settings and start a new game!</div>
+            <div id="board-container"></div>
+        </main>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>

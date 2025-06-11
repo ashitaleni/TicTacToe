@@ -1,37 +1,59 @@
+// static/script.js
+
+// --- Global state variables ---
 let board = [];
 let gameActive = false;
-let moveHistory = [];
-let stats = {
-    wins: 0,
-    losses: 0,
-    draws: 0,
-    aiThinkingTimes: [],
-    movesPerGame: [],
-};
+let boardSize = 3; 
+
+// --- DOM Element references ---
+const startBtn = document.getElementById("start-btn");
+const restartBtn = document.getElementById("restart-btn");
+const boardContainer = document.getElementById("board-container");
+const gameInfo = document.getElementById("game-info");
+const moveHistoryContainer = document.getElementById("move-history");
+const statsDisplay = document.getElementById("stats-display");
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("start-btn").addEventListener("click", startGame);
-    document.getElementById("restart-btn").addEventListener("click", restartGame);
-    document.getElementById("how-to-play-toggle").addEventListener("click", toggleHowToPlay);
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", restartGame);
+    updateStatsDisplay(); // Initial display
 });
 
 function startGame() {
-    const size = 3;
+    // Read new settings from the sidebar
+    boardSize = parseInt(document.getElementById("board-size").value);
     const difficulty = document.getElementById("difficulty").value;
+    const startPlayer = document.getElementById("start-player").value;
+    
+    gameActive = false; // Disable board clicks until server responds
+    updateStatus("Initializing new game...");
 
     fetch("/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ size, difficulty })
+        body: JSON.stringify({ 
+            size: boardSize, 
+            difficulty: difficulty,
+            start_player: startPlayer // Send new setting to backend
+        })
     })
     .then(res => res.json())
-    .then(() => {
-        board = Array.from({ length: size }, () => Array(size).fill(''));
-        gameActive = true;
-        moveHistory = [];
+    .then(data => {
+        board = data.board;
+        moveHistoryContainer.innerHTML = '';
         renderBoard();
+        
+        if (data.initial_ai_move) {
+            // AI made the first move
+            const [aiRow, aiCol] = data.initial_ai_move;
+            board[aiRow][aiCol] = 'O';
+            addMoveToHistory('AI', aiRow, aiCol, data.ai_time);
+            renderBoard();
+        }
+        
+        gameActive = true;
         updateStatus("Your turn (X)");
-        updateStatsDisplay();
+        updateStatsDisplay(data.stats);
     })
     .catch(err => {
         console.error("Error starting game:", err);
@@ -40,44 +62,49 @@ function startGame() {
 }
 
 function restartGame() {
-    fetch("/restart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-    })
+    if (!gameActive && board.length === 0) {
+        updateStatus("Start a game first!");
+        return;
+    }
+    updateStatus("Restarting match...");
+    fetch("/restart", { method: "POST" })
     .then(res => res.json())
-    .then(() => {
-        const size = board.length || 3;
-        board = Array.from({ length: size }, () => Array(size).fill(''));
-        gameActive = true;
-        moveHistory = [];
+    .then(data => {
+        board = data.board;
+        moveHistoryContainer.innerHTML = '';
         renderBoard();
+        gameActive = true;
         updateStatus("Game restarted. Your turn (X)");
     })
-    .catch(err => {
-        console.error("Error restarting game:", err);
-        updateStatus("Failed to restart game");
-    });
-}
-
-function toggleHowToPlay() {
-    const howTo = document.getElementById("how-to-play");
-    howTo.style.display = howTo.style.display === "none" ? "block" : "none";
+    .catch(err => console.error("Error restarting game:", err));
 }
 
 function renderBoard() {
-    const container = document.getElementById("board-container");
-    container.innerHTML = "";
-    container.style.gridTemplateColumns = `repeat(${board.length}, 60px)`;
+    boardContainer.innerHTML = "";
+    // Dynamically set grid size and cell size for different boards
+    const cellSize = boardSize > 3 ? (boardSize > 4 ? 70 : 85) : 100;
+    boardContainer.style.gridTemplateColumns = `repeat(${boardSize}, ${cellSize}px)`;
+    boardContainer.style.gridTemplateRows = `repeat(${boardSize}, ${cellSize}px)`;
 
-    for (let i = 0; i < board.length; i++) {
-        for (let j = 0; j < board[i].length; j++) {
+    for (let i = 0; i < boardSize; i++) {
+        for (let j = 0; j < boardSize; j++) {
             const cell = document.createElement("div");
             cell.classList.add("cell");
             cell.dataset.row = i;
             cell.dataset.col = j;
-            cell.textContent = board[i][j];
+            
+            const cellValue = board[i][j];
+            if (cellValue) {
+                cell.textContent = cellValue;
+                cell.classList.add(cellValue === 'X' ? 'player-x' : 'player-o');
+            }
+            
+            cell.style.width = `${cellSize}px`;
+            cell.style.height = `${cellSize}px`;
+            cell.style.fontSize = `${Math.floor(cellSize * 0.6)}px`;
+            
             cell.addEventListener("click", handleCellClick);
-            container.appendChild(cell);
+            boardContainer.appendChild(cell);
         }
     }
 }
@@ -90,8 +117,11 @@ function handleCellClick(e) {
 
     if (board[row][col] !== '') return;
 
-    updateStatus("Processing move...");
-    const moveStartTime = performance.now();
+    gameActive = false; // Prevent multiple clicks
+    updateStatus("AI is thinking...");
+    board[row][col] = 'X'; // Optimistically place the 'X'
+    addMoveToHistory('You', row, col);
+    renderBoard();
 
     fetch("/move", {
         method: "POST",
@@ -100,64 +130,62 @@ function handleCellClick(e) {
     })
     .then(res => res.json())
     .then(data => {
-        const moveEndTime = performance.now();
-        const moveTime = moveEndTime - moveStartTime;
-
         if (data.status === 'invalid') {
-            updateStatus("Invalid move - try again");
+            updateStatus("Invalid move. Try again.");
+            board[row][col] = ''; // Revert optimistic move
+            renderBoard();
+            gameActive = true;
             return;
         }
-
-        board[row][col] = 'X';
-        moveHistory.push(`You: (${row}, ${col})`);
 
         if (data.ai_move) {
             const [aiRow, aiCol] = data.ai_move;
             board[aiRow][aiCol] = 'O';
-            moveHistory.push(`AI: (${aiRow}, ${aiCol}) [${data.ai_time}s]`);
-            stats.aiThinkingTimes.push(parseFloat(data.ai_time));
+            addMoveToHistory('AI', aiRow, aiCol, data.ai_time);
         }
-
-        renderBoard();
+        
+        renderBoard(); // Render final state of the turn
 
         if (data.status === 'win') {
-            gameActive = false;
-            const result = data.winner === 'X' ? "You win!" : "AI wins!";
-            updateStatus(result);
-            data.winner === 'X' ? stats.wins++ : stats.losses++;
-            finalizeStats();
+            updateStatus(data.winner === 'X' ? "YOU WIN!" : "AI WINS!");
         } else if (data.status === 'draw') {
-            gameActive = false;
-            updateStatus("It's a draw!");
-            stats.draws++;
-            finalizeStats();
+            updateStatus("IT'S A DRAW!");
         } else {
             updateStatus("Your turn (X)");
+            gameActive = true;
         }
+        
+        // Fetch and update stats after every move
+        fetch("/stats").then(res => res.json()).then(updateStatsDisplay);
     })
     .catch(err => {
         console.error("Error making move:", err);
-        updateStatus("Error processing move - try again");
+        updateStatus("Error. Please restart.");
     });
 }
 
+function addMoveToHistory(player, row, col, time) {
+    const moveText = document.createElement('div');
+    moveText.textContent = `${player} -> (${row}, ${col})`;
+    if (time) {
+        moveText.textContent += ` [${time}s]`;
+    }
+    moveHistoryContainer.appendChild(moveText);
+    moveHistoryContainer.scrollTop = moveHistoryContainer.scrollHeight;
+}
+
 function updateStatus(message) {
-    document.getElementById("game-info").textContent = message;
-    document.getElementById("move-history").textContent = moveHistory.join('\n');
+    gameInfo.textContent = message;
 }
 
-function finalizeStats() {
-    stats.movesPerGame.push(moveHistory.length);
-    updateStatsDisplay();
-}
-
-function updateStatsDisplay() {
-    document.getElementById("stats").textContent =
-        `Wins: ${stats.wins}\nLosses: ${stats.losses}\nDraws: ${stats.draws}\n` +
-        `Avg AI Time: ${average(stats.aiThinkingTimes)}s\n` +
-        `Avg Moves/Game: ${average(stats.movesPerGame)}`;
-}
-
-function average(arr) {
-    return arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2) : '0.00';
+function updateStatsDisplay(stats) {
+    if (!stats) {
+        statsDisplay.textContent = "Player (X): 0\nAI (O): 0\nDraws: 0\nAvg AI Time: 0s";
+        return;
+    }
+    statsDisplay.textContent = 
+        `Player (X): ${stats.X}\n` +
+        `AI (O):     ${stats.O}\n` +
+        `Draws:      ${stats.Draws}\n` +
+        `Avg AI Time: ${stats['Avg AI Time']}s`;
 }

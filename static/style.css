@@ -1,44 +1,181 @@
+/* static/style.css */
+
+/* --- Import a cool font from Google Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap');
+
+/* --- CSS Variables for our new theme --- */
+:root {
+    --bg-color: #0c0a1a; /* Deep dark blue/purple */
+    --primary-neon: #00ffff; /* Cyan */
+    --secondary-neon: #ff00ff; /* Magenta */
+    --text-color: #e0e0e0;
+    --border-color: rgba(0, 255, 255, 0.3);
+    --container-bg: rgba(255, 255, 255, 0.05);
+    --font-title: 'Orbitron', sans-serif;
+    --font-body: 'Roboto', sans-serif;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: var(--font-body);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-image: radial-gradient(circle at top, rgba(30, 20, 80, 0.8), transparent 70%),
+                      radial-gradient(circle at bottom left, rgba(120, 30, 120, 0.5), transparent 60%);
+}
+
+.game-wrapper {
+    display: flex;
+    width: 90%;
+    max-width: 1200px;
+    background: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+/* --- Sidebar for Controls & Stats --- */
+.sidebar {
+    width: 300px;
+    padding: 25px;
+    background: rgba(0, 0, 0, 0.2);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sidebar h1 {
+    font-family: var(--font-title);
+    color: var(--primary-neon);
+    text-shadow: 0 0 10px var(--primary-neon);
+    margin: 0 0 20px 0;
     text-align: center;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.control-group label {
+    font-weight: bold;
+    color: var(--secondary-neon);
+    font-size: 1.1em;
+}
+
+select, button {
+    font-family: var(--font-body);
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--primary-neon);
+    border-radius: 25px;
+    color: var(--text-color);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+select option {
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+
+button {
+    background: var(--primary-neon);
+    color: var(--bg-color);
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+button:hover {
+    box-shadow: 0 0 15px var(--primary-neon);
+    transform: translateY(-2px);
+}
+
+.stats-container, .history-container {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.stats-container h3, .history-container h3 {
+    margin-top: 0;
+    font-family: var(--font-title);
+    color: var(--secondary-neon);
+}
+
+.stats-container pre {
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    line-height: 1.6;
+}
+
+.move-history {
+    height: 150px;
+    overflow-y: auto;
+    font-family: var(--font-body);
+    line-height: 1.6;
+    color: #ccc;
+}
+
+/* --- Main Game Area --- */
+.game-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+#game-info {
+    font-size: 2em;
+    font-family: var(--font-title);
+    margin-bottom: 30px;
+    min-height: 1.2em;
+    color: var(--text-color);
+    text-shadow: 0 0 5px var(--secondary-neon);
 }
 
 #board-container {
     display: grid;
-    grid-template-columns: repeat(3, 60px);
-    grid-gap: 5px;
-    margin-top: 20px;
-    justify-content: center;
+    grid-gap: 10px;
 }
 
 .cell {
-    width: 60px;
-    height: 60px;
-    background-color: #f0f0f0;
+    width: 100px;
+    height: 100px;
+    background-color: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2em;
+    font-size: 4em;
+    font-family: var(--font-title);
     cursor: pointer;
-    border: 1px solid #ccc;
+    transition: background-color 0.3s ease;
 }
 
-button {
-    margin: 10px;
-    padding: 10px 20px;
-    font-size: 16px;
+.cell:hover {
+    background-color: rgba(0, 255, 255, 0.1);
 }
 
-select {
-    font-size: 16px;
-    margin: 5px;
+.cell.player-x {
+    color: var(--primary-neon);
+    text-shadow: 0 0 15px var(--primary-neon);
 }
 
-#game-info, #move-history {
-    margin-top: 20px;
-    font-size: 18px;
-}
-
-#stats {
-    margin-top: 30px;
+.cell.player-o {
+    color: var(--secondary-neon);
+    text-shadow: 0 0 15px var(--secondary-neon);
 }
